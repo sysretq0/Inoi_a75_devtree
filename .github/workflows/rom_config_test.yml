@@ -151,6 +151,13 @@ jobs:
               echo 'PRODUCT_MAKEFILES += $(LOCAL_DIR)/A750/A750.mk' >> vendor/products/AndroidProducts.mk
             fi
           fi
+          
+          # Stub vendor/pixel configurations for configuration testing
+          mkdir -p vendor/pixel/clocks/products vendor/pixel/gms/products vendor/pixel/prebuilts vendor/pixel/sounds/products
+          touch vendor/pixel/clocks/products/clocks.mk
+          touch vendor/pixel/gms/products/gms.mk
+          touch vendor/pixel/prebuilts/config.mk
+          touch vendor/pixel/sounds/products/sounds.mk
 
       - name: Clean Git Credentials
         if: always()
