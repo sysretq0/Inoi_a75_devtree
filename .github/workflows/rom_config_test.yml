@@ -27,21 +27,24 @@ jobs:
       - name: Check Out CI Repository
         uses: actions/checkout@v4
 
-      - name: Cleanup Host Storage
-        uses: rokibhasansagar/slimhub_actions@main
-
-      - name: Set Swap Space
-        uses: pierotofy/set-swap-space@master
-        with:
-          swap-size-gb: 24
+      - name: Free Disk Space and Allocate 24G Swap
+        run: |
+          echo "== Disk space before cleanup =="
+          df -h /
+          
+          curl -sL https://raw.githubusercontent.com/sysretq0/android-kernel-builder/main/tools/free-disk-space.sh -o /tmp/free-disk-space.sh
+          chmod +x /tmp/free-disk-space.sh
+          sudo FD_FORCE=1 bash /tmp/free-disk-space.sh
+          
+          echo "== Disk space after cleanup =="
+          df -h /
 
       - name: Set up Environment and Build Tools
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends \
             bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
-            git git-lfs gnupg gperf lib32readline-dev lib32z1-dev libelf-dev \
-            liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
+            git git-lfs gnupg gperf libelf-dev liblz4-tool libncurses-dev libssl-dev \
             libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools \
             xsltproc zip zlib1g-dev python3 python-is-python3
           
@@ -77,8 +80,8 @@ jobs:
             <project name="sysretq0/android_device_inoi_A750" path="device/inoi/A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
             <project name="sysretq0/android_device_inoi_A750-kernel" path="device/inoi/A750-kernel" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
             <project name="sysretq0/proprietary_vendor_inoi_A750" path="vendor/inoi/A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
-            <project name="LumineDroid/android_device_mediatek_sepolicy_vndr" path="device/mediatek/sepolicy_vndr" remote="github" revision="bynx" />
-            <project name="LumineDroid/android_hardware_mediatek" path="hardware/mediatek" remote="github" revision="bynx" />
+            <project name="LumineDroid/android_device_mediatek_sepolicy_vndr" path="device/mediatek/sepolicy_vndr" remote="github" revision="camellia" />
+            <project name="LumineDroid/android_hardware_mediatek" path="hardware/mediatek" remote="github" revision="camellia" />
           </manifest>
           EOF
           
