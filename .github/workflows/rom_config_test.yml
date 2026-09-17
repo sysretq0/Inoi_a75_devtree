@@ -1,0 +1,108 @@
+name: LumineDroid-A17-Config-Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      MANIFEST_BRANCH:
+        description: 'LumineDroid Manifest Branch'
+        required: true
+        default: 'camellia'
+      DEVICE_BRANCH:
+        description: 'Device Tree Branch'
+        required: true
+        default: 'camellia'
+      TARGET:
+        description: 'Lunch Target'
+        required: true
+        default: 'lineage_A750-userdebug'
+
+jobs:
+  config_test:
+    if: github.event.repository.owner.id == github.event.sender.id
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check Out CI Repository
+        uses: actions/checkout@v4
+
+      - name: Cleanup Host Storage
+        uses: rokibhasansagar/slimhub_actions@main
+
+      - name: Set Swap Space
+        uses: pierotofy/set-swap-space@master
+        with:
+          swap-size-gb: 24
+
+      - name: Set up Environment and Build Tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            bc bison build-essential ccache curl flex g++-multilib gcc-multilib \
+            git git-lfs gnupg gperf lib32readline-dev lib32z1-dev libelf-dev \
+            liblz4-tool libncurses5 libncurses5-dev libsdl1.2-dev libssl-dev \
+            libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools \
+            xsltproc zip zlib1g-dev python3 python-is-python3
+          
+          # Install repo tool
+          sudo curl -sL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo
+          sudo chmod a+rx /usr/local/bin/repo
+
+      - name: Configure Git for Private Repositories
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          if [ -z "$GH_PAT" ]; then
+            echo "::error::Secret 'GH_PAT' is missing in repository settings. A Personal Access Token with repo scope is required to access private trees."
+            exit 1
+          fi
+          
+          # Mask token and rewrite GitHub URLs transparently without credential leakage
+          git config --global url."https://${GH_PAT}@github.com/".insteadOf "https://github.com/"
+          git config --global url."https://${GH_PAT}@github.com/".insteadOf "git@github.com:"
+
+      - name: Init and Sync ROM Trees
+        run: |
+          mkdir -p workspace && cd workspace
+          
+          # Initialize LumineDroid camellia manifest
+          repo init -u https://github.com/LumineDroid/platform_manifest.git -b ${{ github.event.inputs.MANIFEST_BRANCH }} --git-lfs --depth=1
+          
+          # Add local manifest for A750 private trees and dependencies
+          mkdir -p .repo/local_manifests
+          cat << 'EOF' > .repo/local_manifests/A750.xml
+          <?xml version="1.0" encoding="UTF-8"?>
+          <manifest>
+            <project name="sysretq0/android_device_inoi_A750" path="device/inoi/A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+            <project name="sysretq0/android_device_inoi_A750-kernel" path="device/inoi/A750-kernel" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+            <project name="sysretq0/proprietary_vendor_inoi_A750" path="vendor/inoi/A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+            <project name="LumineDroid/android_device_mediatek_sepolicy_vndr" path="device/mediatek/sepolicy_vndr" remote="github" revision="bynx" />
+            <project name="LumineDroid/android_hardware_mediatek" path="hardware/mediatek" remote="github" revision="bynx" />
+          </manifest>
+          EOF
+          
+          # Sync trees
+          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+
+      - name: Clean Git Credentials
+        if: always()
+        run: |
+          git config --global --unset-all url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf || true
+          git config --global --unset-all url."git@github.com:".insteadOf || true
+
+      - name: Test ROM Configuration (Lunch & Blueprint Verification)
+        run: |
+          cd workspace
+          
+          # Source Android build environment
+          source build/envsetup.sh
+          
+          # Lunch test: parses AndroidProducts.mk, BoardConfig.mk, device.mk, vendor.mk
+          echo "== Testing Lunch Target =="
+          lunch ${{ github.event.inputs.TARGET }}
+          
+          # Configuration verification: tests Blueprint dependencies, Soong, and ninja generation
+          # 'm nothing' executes the complete build graph resolution without compiling binaries
+          echo "== Testing Build Configuration Graph (m nothing) =="
+          m nothing
