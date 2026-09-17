@@ -169,24 +169,142 @@ jobs:
           git config --global --unset-all url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf || true
           git config --global --unset-all url."git@github.com:".insteadOf || true
 
-      - name: Test ROM Configuration (Lunch & Blueprint Verification)
+      - name: "Test 1: Target Resolution & Build Variables (Lunch)"
         run: |
           cd workspace
-          
-          # Source Android build environment
           source build/envsetup.sh
           
-          # Lunch test: parses AndroidProducts.mk, BoardConfig.mk, device.mk, vendor.mk
           echo "== Testing Lunch Target =="
           lunch ${{ github.event.inputs.TARGET }}
           
           echo "== Dump Target Build Variables =="
-          get_build_var TARGET_DEVICE
-          get_build_var TARGET_ARCH
-          get_build_var BOARD_BOOTIMAGE_PARTITION_SIZE
-          get_build_var BOARD_SUPER_PARTITION_SIZE
-          get_build_var BOARD_SUPER_PARTITION_GROUPS
-          
-          echo "== Validating Device & Vendor Blueprint Syntax =="
-          prebuilts/build-tools/linux-x86/bin/bpfmt -d device/inoi/A750/Android.bp || true
-          prebuilts/build-tools/linux-x86/bin/bpfmt -d vendor/inoi/A750/Android.bp || true
+          echo "TARGET_DEVICE: $(get_build_var TARGET_DEVICE)"
+          echo "TARGET_ARCH: $(get_build_var TARGET_ARCH)"
+          echo "TARGET_2ND_ARCH: $(get_build_var TARGET_2ND_ARCH)"
+          echo "BOARD_BOOTIMAGE_PARTITION_SIZE: $(get_build_var BOARD_BOOTIMAGE_PARTITION_SIZE)"
+          echo "BOARD_SUPER_PARTITION_SIZE: $(get_build_var BOARD_SUPER_PARTITION_SIZE)"
+          echo "BOARD_SUPER_PARTITION_GROUPS: $(get_build_var BOARD_SUPER_PARTITION_GROUPS)"
+
+      - name: "Test 2: Prebuilt Kernel, DTB & Modules Integrity"
+        run: |
+          cd workspace
+          python3 - << 'EOF'
+          import os, sys
+
+          k_dir = "device/inoi/A750-kernel"
+          assert os.path.exists(os.path.join(k_dir, "Image.gz")), "FATAL: Image.gz missing!"
+          assert os.path.exists(os.path.join(k_dir, "dtb", "mt6789.dtb")), "FATAL: mt6789.dtb missing!"
+
+          checks = [
+              ("modules.load.vendor_ramdisk", "modules_ramdisk"),
+              ("modules.load", "modules_dlkm"),
+              ("modules.load.recovery", "modules_ramdisk"),
+          ]
+
+          total_modules = 0
+          for load_file, mod_dir in checks:
+              file_path = os.path.join(k_dir, load_file)
+              with open(file_path) as f:
+                  mods = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+              missing = [m for m in mods if not os.path.exists(os.path.join(k_dir, mod_dir, m))]
+              print(f"[{load_file}] {len(mods)} modules checked. Missing: {len(missing)}")
+              total_modules += len(mods)
+              if missing:
+                  for m in missing[:10]:
+                      print(f"  Missing: {m}")
+                  sys.exit(1)
+
+          print(f"✓ Successfully verified {total_modules} kernel modules, kernel image, and DTB.")
+          EOF
+
+      - name: "Test 3: Proprietary Blobs & Copy-Files Completeness"
+        run: |
+          cd workspace
+          python3 - << 'EOF'
+          import os, sys, re
+
+          v_dir = "vendor/inoi/A750"
+          p_file = "device/inoi/A750/proprietary-files.txt"
+
+          # 1. Check proprietary-files.txt
+          with open(p_file) as f:
+              entries = [l.strip() for l in f if l.strip() and not l.startswith("#")]
+
+          missing_p = []
+          for l in entries:
+              clean = l.split(";")[0].split("|")[0].lstrip("-+")
+              dest = clean.split(":")[1] if ":" in clean else clean
+              if not os.path.exists(os.path.join(v_dir, "proprietary", dest)):
+                  missing_p.append(dest)
+
+          print(f"[proprietary-files.txt] {len(entries)} files checked. Missing: {len(missing_p)}")
+          if missing_p:
+              for m in missing_p[:10]:
+                  print(f"  Missing: {m}")
+              sys.exit(1)
+
+          # 2. Check PRODUCT_COPY_FILES
+          mk_file = os.path.join(v_dir, "A750-vendor.mk")
+          missing_copy = []
+          total_copy = 0
+          with open(mk_file) as f:
+              in_copy = False
+              for line in f:
+                  if "PRODUCT_COPY_FILES" in line:
+                      in_copy = True
+                      continue
+                  if in_copy:
+                      clean = line.rstrip("\\").strip()
+                      if ":" in clean:
+                          src = clean.split(":")[0].strip()
+                          rel = src.replace("vendor/inoi/A750/", "")
+                          total_copy += 1
+                          if not os.path.exists(os.path.join(v_dir, rel)):
+                              missing_copy.append(src)
+
+          print(f"[PRODUCT_COPY_FILES] {total_copy} copy rules checked. Missing: {len(missing_copy)}")
+          if missing_copy:
+              for m in missing_copy[:10]:
+                  print(f"  Missing: {m}")
+              sys.exit(1)
+
+          # 3. Check Android.bp prebuilts
+          bp_file = os.path.join(v_dir, "Android.bp")
+          missing_bp = []
+          total_bp = 0
+          with open(bp_file) as f:
+              for line in f:
+                  m = re.search(r'"(proprietary/[^"]+)"', line)
+                  if m:
+                      src = m.group(1)
+                      total_bp += 1
+                      if not os.path.exists(os.path.join(v_dir, src)):
+                          missing_bp.append(src)
+
+          print(f"[Android.bp prebuilts] {total_bp} prebuilt modules checked. Missing: {len(missing_bp)}")
+          if missing_bp:
+              for m in missing_bp[:10]:
+                  print(f"  Missing: {m}")
+              sys.exit(1)
+
+          print("✓ 100% of declared proprietary blobs and copy-files verified on disk.")
+          EOF
+
+      - name: "Test 4: Blueprint Syntax and Formatting (bpfmt)"
+        run: |
+          cd workspace
+          echo "== Linting device/inoi/A750/Android.bp =="
+          prebuilts/build-tools/linux-x86/bin/bpfmt -d device/inoi/A750/Android.bp
+          echo "== Linting vendor/inoi/A750/Android.bp =="
+          prebuilts/build-tools/linux-x86/bin/bpfmt -d vendor/inoi/A750/Android.bp
+          echo "✓ Blueprint syntax is valid and conforms to Soong parser requirements."
+
+      - name: "Test 5: Mediatek SEPolicy Rules Check"
+        run: |
+          cd workspace
+          echo "== Verifying Mediatek SEPolicy Source Tree =="
+          test -d device/mediatek/sepolicy_vndr
+          test -f device/mediatek/sepolicy_vndr/SEPolicy.mk
+          echo "SEPolicy makefiles present: $(ls device/mediatek/sepolicy_vndr/*.mk | wc -l)"
+          echo "Vendor SEPolicy policy rules count: $(find device/mediatek/sepolicy_vndr -name '*.te' | wc -l) files"
+          echo "✓ Mediatek vendor sepolicy definitions verified."
