@@ -349,8 +349,8 @@ jobs:
             exit 1
           fi
 
-          # Assemble base SELinux definitions in strict declaration order
-          BASE_FILES=""
+          # 1. Header declarations (Classes, Macros, Attributes) must precede all type enforcement (.te) rules
+          HEADER_FILES=""
           for f in \
             system/sepolicy/private/security_classes \
             system/sepolicy/private/initial_sids \
@@ -364,7 +364,15 @@ jobs:
             system/sepolicy/public/attributes \
             system/sepolicy/private/attributes \
             system/sepolicy/public/ioctl_defines \
-            system/sepolicy/public/ioctl_macros \
+            system/sepolicy/public/ioctl_macros; do
+            if [ -f "$f" ]; then
+              HEADER_FILES="$HEADER_FILES $f"
+            fi
+          done
+
+          # 2. Footer declarations (Roles, Users, Initial SID Contexts) must strictly follow all type rules
+          FOOTER_FILES=""
+          for f in \
             system/sepolicy/public/roles \
             system/sepolicy/private/roles_decl \
             system/sepolicy/private/roles \
@@ -374,7 +382,7 @@ jobs:
             system/sepolicy/private/genfs_contexts \
             system/sepolicy/private/port_contexts; do
             if [ -f "$f" ]; then
-              BASE_FILES="$BASE_FILES $f"
+              FOOTER_FILES="$FOOTER_FILES $f"
             fi
           done
 
@@ -383,10 +391,11 @@ jobs:
             -D mls_num_cats=1024 \
             -D target_build_variant=userdebug \
             -D target_arch=arm64 \
-            $BASE_FILES \
+            $HEADER_FILES \
             $(find system/sepolicy/public -name "*.te" 2>/dev/null | sort) \
             $(find system/sepolicy/private -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
+            $FOOTER_FILES \
             > out/sepolicy_test/policy.conf
 
           # Strip kernel-level policycap declarations that host checkpolicy does not recognize
@@ -396,7 +405,7 @@ jobs:
 
           set +e
           SE_LOG=$(mktemp)
-          checkpolicy -M -c 30 -o out/sepolicy_test/policy.bin out/sepolicy_test/policy.conf > "$SE_LOG" 2>&1
+          checkpolicy -M -U allow -c 30 -o out/sepolicy_test/policy.bin out/sepolicy_test/policy.conf > "$SE_LOG" 2>&1
           SE_STATUS=$?
           set -e
 
