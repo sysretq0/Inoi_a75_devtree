@@ -81,6 +81,10 @@ jobs:
           # Mask token and rewrite GitHub URLs transparently without credential leakage
           git config --global url."https://${GH_PAT}@github.com/".insteadOf "https://github.com/"
           git config --global url."https://${GH_PAT}@github.com/".insteadOf "git@github.com:"
+          
+          # Set git committer identity for patches
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Init and Sync ROM Trees
         run: |
