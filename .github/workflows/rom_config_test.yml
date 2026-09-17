@@ -116,6 +116,8 @@ jobs:
             prebuilts/build-tools \
             prebuilts/go/linux-x86 \
             vendor/lumine \
+            frameworks/native \
+            device/lumine/sepolicy \
             device/inoi/A750 \
             device/inoi/A750-kernel \
             vendor/inoi/A750 \
