@@ -119,6 +119,7 @@ jobs:
             external/pogreb \
             prebuilts/build-tools \
             prebuilts/go/linux-x86 \
+            toolchain/pgo-profiles \
             vendor/lumine \
             frameworks/native \
             device/lumine/sepolicy \
@@ -152,12 +153,14 @@ jobs:
             fi
           fi
           
-          # Stub vendor/pixel configurations for configuration testing
+          # Stub vendor/pixel configurations and satisfy AFDO profile requirements
           mkdir -p vendor/pixel/clocks/products vendor/pixel/gms/products vendor/pixel/prebuilts vendor/pixel/sounds/products
           touch vendor/pixel/clocks/products/clocks.mk
           touch vendor/pixel/gms/products/gms.mk
           touch vendor/pixel/prebuilts/config.mk
           touch vendor/pixel/sounds/products/sounds.mk
+          mkdir -p toolchain/pgo-profiles/sampling
+          [ -f toolchain/pgo-profiles/sampling/afdo_profiles.mk ] || touch toolchain/pgo-profiles/sampling/afdo_profiles.mk
 
       - name: Clean Git Credentials
         if: always()
