@@ -26,6 +26,8 @@ jobs:
     steps:
       - name: Check Out CI Repository
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Free Disk Space and Allocate 24G Swap
         run: |
@@ -60,6 +62,18 @@ jobs:
             echo "::error::Secret 'GH_PAT' is missing in repository settings. A Personal Access Token with repo scope is required to access private trees."
             exit 1
           fi
+          
+          # Remove any runner-level extraheader from checkout
+          git config --global --unset-all http.https://github.com/.extraheader || true
+          git config --system --unset-all http.https://github.com/.extraheader || true
+          
+          # Configure .netrc for git, curl, and python/repo tool
+          cat << EOF > ~/.netrc
+          machine github.com
+          login x-access-token
+          password ${GH_PAT}
+          EOF
+          chmod 600 ~/.netrc
           
           # Mask token and rewrite GitHub URLs transparently without credential leakage
           git config --global url."https://${GH_PAT}@github.com/".insteadOf "https://github.com/"
@@ -112,6 +126,7 @@ jobs:
       - name: Clean Git Credentials
         if: always()
         run: |
+          rm -f ~/.netrc
           git config --global --unset-all url."https://${{ secrets.GH_PAT }}@github.com/".insteadOf || true
           git config --global --unset-all url."git@github.com:".insteadOf || true
 
