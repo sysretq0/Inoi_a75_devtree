@@ -120,6 +120,7 @@ jobs:
             prebuilts/build-tools \
             prebuilts/go/linux-x86 \
             toolchain/pgo-profiles \
+            system/tools/mkbootimg \
             vendor/lumine \
             frameworks/native \
             device/lumine/sepolicy \
@@ -308,3 +309,60 @@ jobs:
           echo "SEPolicy makefiles present: $(ls device/mediatek/sepolicy_vndr/*.mk | wc -l)"
           echo "Vendor SEPolicy policy rules count: $(find device/mediatek/sepolicy_vndr -name '*.te' | wc -l) files"
           echo "✓ Mediatek vendor sepolicy definitions verified."
+
+      - name: "Test 6: Boot & Vendor Boot Image Packing Test (mkbootimg)"
+        run: |
+          cd workspace
+          echo "== Testing GKI Boot Image Creation (Header v4) =="
+          mkdir -p out/test_boot
+          
+          # Create a dummy ramdisk for packaging test
+          touch out/test_boot/dummy_ramdisk
+          (cd out/test_boot && cpio -o -H newc < dummy_ramdisk | gzip -c > ramdisk.cpio.gz)
+          
+          # Pack boot.img with prebuilt GKI kernel
+          python3 system/tools/mkbootimg/mkbootimg.py \
+            --kernel device/inoi/A750-kernel/Image.gz \
+            --ramdisk out/test_boot/ramdisk.cpio.gz \
+            --header_version 4 \
+            --pagesize 4096 \
+            -o out/test_boot/boot.img
+          
+          BOOT_SIZE=$(stat -c%s out/test_boot/boot.img)
+          echo "Generated boot.img size: $BOOT_SIZE bytes (partition limit: 67108864 bytes)"
+          if [ "$BOOT_SIZE" -gt 67108864 ]; then
+            echo "FATAL: boot.img exceeds partition size!"
+            exit 1
+          fi
+          
+          # Pack vendor_boot.img with prebuilt MT6789 DTB
+          python3 system/tools/mkbootimg/mkbootimg.py \
+            --header_version 4 \
+            --pagesize 4096 \
+            --base 0x3fff8000 \
+            --kernel_offset 0x00008000 \
+            --ramdisk_offset 0x26f08000 \
+            --tags_offset 0x07c88000 \
+            --dtb_offset 0x07c88000 \
+            --dtb device/inoi/A750-kernel/dtb/mt6789.dtb \
+            --vendor_ramdisk out/test_boot/ramdisk.cpio.gz \
+            --vendor_cmdline "bootopt=64S3,32N2,64N2 androidboot.serialconsole=0" \
+            -o out/test_boot/vendor_boot.img
+            
+          VENDOR_BOOT_SIZE=$(stat -c%s out/test_boot/vendor_boot.img)
+          echo "Generated vendor_boot.img size: $VENDOR_BOOT_SIZE bytes (partition limit: 67108864 bytes)"
+          if [ "$VENDOR_BOOT_SIZE" -gt 67108864 ]; then
+            echo "FATAL: vendor_boot.img exceeds partition size!"
+            exit 1
+          fi
+          
+          # Unpack and verify header format and magic
+          python3 system/tools/mkbootimg/unpack_bootimg.py \
+            --boot_img out/test_boot/boot.img \
+            --out out/test_boot/unpacked_boot
+            
+          python3 system/tools/mkbootimg/unpack_bootimg.py \
+            --boot_img out/test_boot/vendor_boot.img \
+            --out out/test_boot/unpacked_vendor_boot
+            
+          echo "✓ Boot and vendor_boot images packed, unpacked, and verified successfully within partition limits."
