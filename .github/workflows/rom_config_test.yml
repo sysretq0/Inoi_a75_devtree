@@ -14,7 +14,7 @@ on:
       TARGET:
         description: 'Lunch Target'
         required: true
-        default: 'lineage_A750-userdebug'
+        default: 'A750-trunk_staging-userdebug'
 
 jobs:
   config_test:
@@ -121,6 +121,25 @@ jobs:
           # Ensure vendor/lineage compatibility symlink
           if [ -d vendor/lumine ] && [ ! -d vendor/lineage ]; then
             ln -sf lumine vendor/lineage
+          fi
+          
+          # Set up LumineDroid vendor/products integration for A750
+          mkdir -p vendor/products/A750
+          cat << 'EOF' > vendor/products/A750/beans.xml
+<?xml version='1.0' encoding='utf-8'?>
+<manifest>
+  <project path="device/inoi/A750" name="sysretq0/android_device_inoi_A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+  <project path="device/inoi/A750-kernel" name="sysretq0/android_device_inoi_A750-kernel" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+  <project path="vendor/inoi/A750" name="sysretq0/proprietary_vendor_inoi_A750" remote="github" revision="${{ github.event.inputs.DEVICE_BRANCH }}" />
+  <project path="hardware/mediatek" name="LumineDroid/android_hardware_mediatek" remote="github" revision="camellia" />
+  <project path="device/mediatek/sepolicy_vndr" name="LumineDroid/android_device_mediatek_sepolicy_vndr" remote="github" revision="camellia" />
+</manifest>
+EOF
+          cp device/inoi/A750/A750.mk vendor/products/A750/A750.mk
+          if [ -f vendor/products/AndroidProducts.mk ]; then
+            if ! grep -q "A750/A750.mk" vendor/products/AndroidProducts.mk; then
+              echo 'PRODUCT_MAKEFILES += $(LOCAL_DIR)/A750/A750.mk' >> vendor/products/AndroidProducts.mk
+            fi
           fi
 
       - name: Clean Git Credentials
