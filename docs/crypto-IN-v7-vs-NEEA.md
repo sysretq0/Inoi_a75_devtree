@@ -82,3 +82,47 @@ cat /vendor/etc/vintf/manifest/*.xml 2>/dev/null | grep -A2 -iE "keymint|keymast
 grep userdata /vendor/etc/fstab.mt6789
 getprop ro.build.version.release; getprop ro.vendor.build.version.release
 ```
+
+## Outcome: the reported failure is a credential mismatch, not a bug
+
+Logs from both devices settle it. Reproducing a **wrong** PIN on a healthy
+NEEA device produces exactly the reported failure, line for line:
+
+```
+Attempting to decrypt user's synthetic password
+fscrypt::GetPassword_Token
+Is_Weaver
+using secdis to decrypt spblob
+Attempting to unwrap synthetic password blob
+spblob v2 / v3
+Begin Operation failed
+failed to unwrapSyntheticPasswordBlob
+Failed to decrypt user 0
+```
+
+The correct PIN on the same device, same run, takes the same path and ends in
+`User 0 Decrypted Successfully!`. So `Begin Operation failed` is simply what a
+rejected credential looks like — keymaster refuses to start the operation with
+a key derived from the wrong input.
+
+On the IN device the whole path up to that point succeeds: metadata decrypted,
+`/data` mounted, the blob located and identified as `spblob v2 / v3`. Nothing in
+the log distinguishes it from the wrong-PIN case.
+
+Ruled out along the way, each by evidence rather than argument:
+
+- **spblob format** — both devices report `spblob v2 / v3` and parse it
+- **keymaster version** — `4.1` on both, HALs identical (see above)
+- **the patched LK** — both report `device_state=locked`,
+  `verifiedbootstate=green`; it is the same on the working device
+- **the custom kernel** — the IN device runs `5.10.260-SuiKernel-Stable-KSUN`
+  against stock `5.10.205-android12-...` here, but the code path taken is
+  identical on both
+
+What remains is on the device itself: the credential material protecting the
+blob does not match what is being typed, or its keystore state is inconsistent.
+Neither is reachable from the recovery side, and neither is a reason to change
+anything in this tree.
+
+If the report resurfaces, the first thing to ask for is a new simple PIN set
+from the system, then a fresh attempt — not another build.
