@@ -357,14 +357,18 @@ jobs:
             system/sepolicy/private/access_vectors \
             system/sepolicy/public/global_macros \
             system/sepolicy/public/neverallow_macros \
+            system/sepolicy/public/ioctl_defines \
+            system/sepolicy/public/ioctl_macros \
+            system/sepolicy/public/nlmsg_defines \
+            system/sepolicy/public/nlmsg_macros \
+            system/sepolicy/private/nlmsg_defines \
+            system/sepolicy/private/nlmsg_macros \
             system/sepolicy/private/mls_macros \
             system/sepolicy/private/mls_decl \
             system/sepolicy/private/mls \
             system/sepolicy/public/te_macros \
             system/sepolicy/public/attributes \
-            system/sepolicy/private/attributes \
-            system/sepolicy/public/ioctl_defines \
-            system/sepolicy/public/ioctl_macros; do
+            system/sepolicy/private/attributes; do
             if [ -f "$f" ]; then
               HEADER_FILES="$HEADER_FILES $f"
             fi
@@ -388,7 +392,7 @@ jobs:
 
           # Define AOSP release flagging macros for m4
           FLAG_MACROS=$(mktemp)
-          printf 'divert(-1)\ndefine(`is_flag_enabled\x27, `ifelse(target_flag_$1, `true\x27, `$2\x27)\x27)\ndefine(`is_flag_disabled\x27, `ifelse(target_flag_$1, `true\x27, `\x27, `$2\x27)\x27)\ndefine(`starting_at_board_api\x27, `ifelse(eval(target_board_api_level >= $1), 1, `$2\x27)\x27)\ndefine(`until_board_api\x27, `ifelse(eval(target_board_api_level < $1), 1, `$2\x27)\x27)\ndivert(0)dnl\n' > "$FLAG_MACROS"
+          printf 'divert(-1)\ndefine(`is_flag_enabled\x27, `ifelse(target_flag_$1, `true\x27, `$2\x27)\x27)\ndefine(`is_flag_disabled\x27, `ifelse(target_flag_$1, `true\x27, `\x27, `$2\x27)\x27)\ndefine(`starting_at_board_api\x27, `ifelse(eval(target_board_api_level >= $1), 1, `$2\x27)\x27)\ndefine(`until_board_api\x27, `ifelse(eval(target_board_api_level < $1), 1, `$2\x27)\x27)\ndefine(`RTM_GETLINK\x27, `18\x27)\ndefine(`RTM_GETNEIGH\x27, `30\x27)\ndefine(`RTM_GETNEIGHTBL\x27, `66\x27)\ndivert(0)dnl\n' > "$FLAG_MACROS"
 
           m4 -s \
             -D mls_num_sens=1 \
