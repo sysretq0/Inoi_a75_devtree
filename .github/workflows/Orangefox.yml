@@ -27,7 +27,7 @@ on:
       DEVICE_TREE_URL:
         description: 'DEVICE_TREE_URL'
         required: true
-        default: 'https://github.com/tommynok/Inoi_a75_devtree'
+        default: 'https://github.com/sysretq0/Inoi_a75_devtree'
       DEVICE_TREE_BRANCH:
         description: 'DEVICE_TREE_BRANCH'
         required: true

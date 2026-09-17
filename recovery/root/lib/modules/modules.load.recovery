@@ -60,6 +60,7 @@ cmdq_helper_inf.ko
 mtk-mml.ko
 mtk_panel_ext.ko
 panel-truly-ft8725-vdo-m9903.ko
+panel-truly-nt36672s_fhdp2460-vdo-m9903.ko
 panel-alpha-jdi-nt36672e-vdo-120hz-hfp.ko
 panel-truly-td4330-cmd.ko
 panel-samsung-ana6705-cmd-fhdp.ko

@@ -255,6 +255,8 @@ alias of:N*T*Cmediatek,mt6373 mtk_spmi_pmic
 alias of:N*T*Cmediatek,mt6373C* mtk_spmi_pmic
 alias of:N*T*Cmediatek,scpsys-disable-unused mtk_pm_domain_disable_unused
 alias of:N*T*Cmediatek,scpsys-disable-unusedC* mtk_pm_domain_disable_unused
+alias of:N*T*Cnt36672s_fhdp2460,vdo-m9903 panel_truly_nt36672s_fhdp2460_vdo_m9903
+alias of:N*T*Cnt36672s_fhdp2460,vdo-m9903C* panel_truly_nt36672s_fhdp2460_vdo_m9903
 alias of:N*T*Ctianma,r66451,cmd,120hz panel_tianma_r66451_cmd_120hz
 alias of:N*T*Ctianma,r66451,cmd,120hzC* panel_tianma_r66451_cmd_120hz
 alias of:N*T*Cmediatek,pbm mtk_pbm
@@ -1029,5 +1031,3 @@ alias of:N*T*Cmediatek,mt6855-mdpm mtk_mdpm
 alias of:N*T*Cmediatek,mt6855-mdpmC* mtk_mdpm
 alias of:N*T*Cmediatek,mt6789-mdpm mtk_mdpm
 alias of:N*T*Cmediatek,mt6789-mdpmC* mtk_mdpm
-alias of:N*T*Cfocaltech,fts focaltech_tp
-alias of:N*T*Cfocaltech,ftsC* focaltech_tp

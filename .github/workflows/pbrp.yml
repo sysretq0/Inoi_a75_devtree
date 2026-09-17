@@ -28,7 +28,7 @@ on:
       DEVICE_TREE_URL:
         description: 'DEVICE_TREE_URL'
         required: true
-        default: 'https://github.com/tommynok/Inoi_a75_devtree'
+        default: 'https://github.com/sysretq0/Inoi_a75_devtree'
       DEVICE_TREE_BRANCH:
         description: 'DEVICE_TREE_BRANCH'
         required: true
@@ -133,8 +133,8 @@ jobs:
         mkdir workspace
         cd workspace
         echo "workspace-folder=$(pwd)" >> $GITHUB_OUTPUT
-        git config --global user.name "tommynok"
-        git config --global user.email "tommynok@users.noreply.github.com"
+        git config --global user.name "sysretq0"
+        git config --global user.email "324514544+sysretq0@users.noreply.github.com"
         repo init --depth=1 -u ${{ github.event.inputs.MANIFEST_URL }} -b ${{ github.event.inputs.MANIFEST_BRANCH }}
       id: pwd
 

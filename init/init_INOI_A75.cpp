@@ -32,4 +32,9 @@ void vendor_load_properties()
         property_override(string("ro.product.") + prop + string("marketname"), "INOI A75 Elegance");
         property_override(string("ro.product.system.") + prop + string("device"), "INOI_A75_Elegance");
     }
+
+    property_override("ro.build.display.id", "INOI_A750_ID_U_V7_20260822_user");
+    property_override("ro.build.description", "INOI_A750_ID_U_V7_20260822_user");
+    property_override("ro.build.version.incremental", "60821");
+    property_override("ro.build.fingerprint", "INOI/INOI_A75_Elegance/INOI_A75_Elegance:14/UP1A.231005.007/60821:user/release-keys");
 }
