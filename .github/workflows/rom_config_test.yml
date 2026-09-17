@@ -380,8 +380,13 @@ jobs:
           done
 
           m4 -s \
+            -D mls_num_sens=1 \
+            -D mls_num_cats=1024 \
+            -D target_build_variant=userdebug \
+            -D target_arch=arm64 \
             $BASE_FILES \
             $(find system/sepolicy/public -name "*.te" 2>/dev/null | sort) \
+            $(find system/sepolicy/private -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
             > out/sepolicy_test/policy.conf
 
