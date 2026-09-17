@@ -142,6 +142,32 @@ else
     echo "WARNING: boot-timing patch failed dry-run (twrp.cpp upstream context may have changed) - skipping, build continues"
 fi
 
+# --- 0h. Gatekeeper diagnostics (system/vold, NOT bootable/recovery) ---
+# The FBE/spblob credential path calls gatekeeper->verify() and only acts on a
+# plain accept: a rejected credential, a lockout, or a keystore that refuses the
+# auth token all leave the lambda silently, no token is delivered, and the
+# failure only surfaces later in unwrapSyntheticPasswordBlob() as a bare
+# "Begin Operation failed" - the exact line a wrong PIN produces. A correct PIN
+# entered while gatekeeper is throttling is therefore indistinguishable from a
+# wrong one. The other verify() call in the same file, on the FDE path, does
+# handle ERROR_RETRY_TIMEOUT, so this is an omission rather than a design.
+# Logging only: no control flow changes, every branch still falls through
+# exactly as before.
+# Note the different -d: this patch applies to system/vold.
+# Disable by renaming this .diff to .diff.bak.
+GK_DIAG_PATCH="$PATCH_DIR/patch-gatekeeper-diagnostics-fox_12.1.diff"
+echo "=== Applying gatekeeper diagnostics ==="
+if [ ! -f "$GK_DIAG_PATCH" ]; then
+    echo "WARNING: $GK_DIAG_PATCH not found, skipping gatekeeper diagnostics"
+elif [ ! -d "$FOX/system/vold" ]; then
+    echo "WARNING: $FOX/system/vold not present - skipping gatekeeper diagnostics"
+elif patch -p1 --dry-run -d "$FOX/system/vold" < "$GK_DIAG_PATCH" > /dev/null 2>&1; then
+    patch -p1 -d "$FOX/system/vold" < "$GK_DIAG_PATCH"
+    echo "Gatekeeper diagnostics applied successfully"
+else
+    echo "WARNING: gatekeeper diagnostics failed dry-run (Decrypt.cpp upstream context may have changed) - skipping, build continues"
+fi
+
 echo "=== Theme slimming: start ==="
 echo "GUI dir size before:"
 du -sh "$GUI"

@@ -1,0 +1,61 @@
+--- a/Decrypt.cpp
++++ b/Decrypt.cpp
+@@ -771,13 +771,25 @@
+ 			android::hardware::hidl_vec<uint8_t> gk_pwd_token_hidl;
+ 			GKResponse gkResponse;
+ 			gk_pwd_token_hidl.setToExternal(const_cast<uint8_t *>((const uint8_t *)gk_pwd_token), SHA512_DIGEST_LENGTH);
++			// Diagnostics only. Every gatekeeper outcome other than a plain accept
++			// currently leaves this lambda without a word, no auth token reaches the
++			// keystore, and the failure surfaces much later in
++			// unwrapSyntheticPasswordBlob() as a bare "Begin Operation failed" - the
++			// same line a genuinely wrong credential produces. A correct PIN entered
++			// while gatekeeper is throttling therefore looks exactly like a wrong one.
++			// Record what actually came back so the two can be told apart.
++			bool gk_token_delivered = false;
++			int32_t gk_code = 0;
++			uint32_t gk_timeout = 0;
+ 			android::hardware::Return<void> hwRet =
+ 				gk_device->verify(fakeUid(user_id), 0 /* challenge */,
+ 								  pwd_handle_hidl,
+ 								  gk_pwd_token_hidl,
+-								  [&gkResponse]
++								  [&gkResponse, &gk_token_delivered, &gk_code, &gk_timeout]
+ 									// []
+ 									(const android::hardware::gatekeeper::V1_0::GatekeeperResponse &rsp) {
++										gk_code = static_cast<int32_t>(rsp.code);
++										gk_timeout = rsp.timeout;
+ 										// ret = static_cast<int>(rsp.code); // propagate errors
+ 										if (rsp.code >= android::hardware::gatekeeper::V1_0::GatekeeperStatusCode::STATUS_OK) {
+ 											gkResponse = GKResponse::ok({rsp.data.begin(), rsp.data.end()});
+@@ -799,6 +811,10 @@
+ 												ALOGE("error: could not connect to keystore service\n");
+ 											}
+ 											auto binder_result = service->addAuthToken(authToken);
++											gk_token_delivered = binder_result.isOk();
++											if (!gk_token_delivered)
++												printf("gatekeeper: keystore refused the auth token: %s\n",
++													   binder_result.getDescription().c_str());
+ 										}
+ 									}
+ 								 );
+@@ -807,6 +823,20 @@
+ 				printf("gatekeeper verification failed\n");
+ 				return Free_Return(retval, weaver_key, &pwd);
+ 			}
++			// Diagnostics only - nothing below changes, including the case where no
++			// token was delivered, which still falls through to the keystore call.
++			if (gk_token_delivered) {
++				printf("gatekeeper: credential accepted (code %d), auth token delivered to keystore\n", gk_code);
++			} else if (gk_code == static_cast<int32_t>(
++					android::hardware::gatekeeper::V1_0::GatekeeperStatusCode::ERROR_RETRY_TIMEOUT)) {
++				printf("gatekeeper: THROTTLED, retry in %u ms. The credential was never checked, so any\n"
++					   "            failure reported below says nothing about whether it was correct.\n",
++					   gk_timeout);
++			} else if (gk_code < 0) {
++				printf("gatekeeper: rejected the credential (code %d)\n", gk_code);
++			} else {
++				printf("gatekeeper: returned code %d, but no auth token reached the keystore\n", gk_code);
++			}
+ 		}
+ 	}
+ 	// Now we will handle https://android.googlesource.com/platform/frameworks/base/+/android-8.0.0_r23/services/core/java/com/android/server/locksettings/SyntheticPasswordManager.java#816
