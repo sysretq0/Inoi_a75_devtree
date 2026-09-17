@@ -7,14 +7,17 @@ on:
         description: 'LumineDroid Manifest Branch'
         required: true
         default: 'camellia'
+        type: string
       DEVICE_BRANCH:
         description: 'Device Tree Branch'
         required: true
         default: 'camellia'
+        type: string
       TARGET:
         description: 'Lunch Target'
         required: true
         default: 'A750-trunk_staging-userdebug'
+        type: string
 
 jobs:
   config_test:
