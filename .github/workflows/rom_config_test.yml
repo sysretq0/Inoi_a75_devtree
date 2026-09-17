@@ -386,17 +386,28 @@ jobs:
             fi
           done
 
+          # Define AOSP release flagging macros for m4
+          FLAG_MACROS=$(mktemp)
+          cat << 'EOF' > "$FLAG_MACROS"
+divert(-1)
+define(`is_flag_enabled', `ifelse(target_flag_$1, `true', `$2')')
+define(`is_flag_disabled', `ifelse(target_flag_$1, `true', `', `$2')')
+divert(0)
+EOF
+
           m4 -s \
             -D mls_num_sens=1 \
             -D mls_num_cats=1024 \
             -D target_build_variant=userdebug \
             -D target_arch=arm64 \
             $HEADER_FILES \
+            "$FLAG_MACROS" \
             $(find system/sepolicy/public -name "*.te" 2>/dev/null | sort) \
             $(find system/sepolicy/private -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
             $FOOTER_FILES \
             > out/sepolicy_test/policy.conf
+          rm -f "$FLAG_MACROS"
 
           # Strip kernel-level policycap declarations that host checkpolicy does not recognize
           sed -i '/^[[:space:]]*policycap /d' out/sepolicy_test/policy.conf
