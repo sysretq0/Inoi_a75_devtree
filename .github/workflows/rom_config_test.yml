@@ -349,12 +349,38 @@ jobs:
             exit 1
           fi
 
-          m4 --fatal-warnings -s \
+          # Assemble base SELinux definitions in strict declaration order
+          BASE_FILES=""
+          for f in \
             system/sepolicy/private/security_classes \
             system/sepolicy/private/initial_sids \
             system/sepolicy/private/access_vectors \
             system/sepolicy/public/global_macros \
+            system/sepolicy/public/neverallow_macros \
+            system/sepolicy/private/mls_macros \
+            system/sepolicy/private/mls_decl \
+            system/sepolicy/private/mls \
+            system/sepolicy/private/policy_capabilities \
             system/sepolicy/public/te_macros \
+            system/sepolicy/public/attributes \
+            system/sepolicy/private/attributes \
+            system/sepolicy/public/ioctl_defines \
+            system/sepolicy/public/ioctl_macros \
+            system/sepolicy/public/roles \
+            system/sepolicy/private/roles_decl \
+            system/sepolicy/private/roles \
+            system/sepolicy/private/users \
+            system/sepolicy/private/initial_sid_contexts \
+            system/sepolicy/private/fs_use \
+            system/sepolicy/private/genfs_contexts \
+            system/sepolicy/private/port_contexts; do
+            if [ -f "$f" ]; then
+              BASE_FILES="$BASE_FILES $f"
+            fi
+          done
+
+          m4 -s \
+            $BASE_FILES \
             $(find system/sepolicy/public -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
             > out/sepolicy_test/policy.conf
