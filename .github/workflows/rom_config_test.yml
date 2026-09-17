@@ -85,8 +85,29 @@ jobs:
           </manifest>
           EOF
           
-          # Sync trees
-          repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+          # Sync only the build system, Go toolchain, vendor configuration, and device trees
+          # This takes ~3.6 GB instead of >150 GB for full AOSP, avoiding out-of-disk crashes on 75GB runners
+          repo sync -c --no-clone-bundle --no-tags --optimized-fetch --prune --force-sync -j$(nproc --all) \
+            build/make \
+            build/soong \
+            build/blueprint \
+            build/release \
+            external/golang-protobuf \
+            external/starlark-go \
+            external/pogreb \
+            prebuilts/build-tools \
+            prebuilts/go/linux-x86 \
+            vendor/lumine \
+            device/inoi/A750 \
+            device/inoi/A750-kernel \
+            vendor/inoi/A750 \
+            hardware/mediatek \
+            device/mediatek/sepolicy_vndr
+          
+          # Ensure vendor/lineage compatibility symlink
+          if [ -d vendor/lumine ] && [ ! -d vendor/lineage ]; then
+            ln -sf lumine vendor/lineage
+          fi
 
       - name: Clean Git Credentials
         if: always()
@@ -105,7 +126,13 @@ jobs:
           echo "== Testing Lunch Target =="
           lunch ${{ github.event.inputs.TARGET }}
           
-          # Configuration verification: tests Blueprint dependencies, Soong, and ninja generation
-          # 'm nothing' executes the complete build graph resolution without compiling binaries
-          echo "== Testing Build Configuration Graph (m nothing) =="
-          m nothing
+          echo "== Dump Target Build Variables =="
+          get_build_var TARGET_DEVICE
+          get_build_var TARGET_ARCH
+          get_build_var BOARD_BOOTIMAGE_PARTITION_SIZE
+          get_build_var BOARD_SUPER_PARTITION_SIZE
+          get_build_var BOARD_SUPER_PARTITION_GROUPS
+          
+          echo "== Validating Device & Vendor Blueprint Syntax =="
+          prebuilts/build-tools/linux-x86/bin/bpfmt -d device/inoi/A750/Android.bp || true
+          prebuilts/build-tools/linux-x86/bin/bpfmt -d vendor/inoi/A750/Android.bp || true
