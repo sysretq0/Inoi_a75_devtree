@@ -360,7 +360,6 @@ jobs:
             system/sepolicy/private/mls_macros \
             system/sepolicy/private/mls_decl \
             system/sepolicy/private/mls \
-            system/sepolicy/private/policy_capabilities \
             system/sepolicy/public/te_macros \
             system/sepolicy/public/attributes \
             system/sepolicy/private/attributes \
@@ -389,6 +388,9 @@ jobs:
             $(find system/sepolicy/private -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
             > out/sepolicy_test/policy.conf
+
+          # Strip kernel-level policycap declarations that host checkpolicy does not recognize
+          sed -i '/^[[:space:]]*policycap /d' out/sepolicy_test/policy.conf
 
           echo "Generated policy.conf: $(stat -c%s out/sepolicy_test/policy.conf) bytes"
 
