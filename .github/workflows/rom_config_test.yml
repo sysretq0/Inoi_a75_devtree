@@ -352,6 +352,8 @@ jobs:
           # 1. Header declarations (Classes, Macros, Attributes) must precede all type enforcement (.te) rules
           HEADER_FILES=""
           for f in \
+            system/sepolicy/flagging/flagging_macros \
+            system/sepolicy/flagging/te_macros \
             system/sepolicy/private/security_classes \
             system/sepolicy/private/initial_sids \
             system/sepolicy/private/access_vectors \
@@ -388,20 +390,16 @@ jobs:
 
           # Define AOSP release flagging macros for m4
           FLAG_MACROS=$(mktemp)
-          cat << 'EOF' > "$FLAG_MACROS"
-divert(-1)
-define(`is_flag_enabled', `ifelse(target_flag_$1, `true', `$2')')
-define(`is_flag_disabled', `ifelse(target_flag_$1, `true', `', `$2')')
-divert(0)
-EOF
+          printf 'divert(-1)\ndefine(`is_flag_enabled\x27, `ifelse(target_flag_$1, `true\x27, `$2\x27)\x27)\ndefine(`is_flag_disabled\x27, `ifelse(target_flag_$1, `true\x27, `\x27, `$2\x27)\x27)\ndefine(`starting_at_board_api\x27, `ifelse(eval(target_board_api_level >= $1), 1, `$2\x27)\x27)\ndefine(`until_board_api\x27, `ifelse(eval(target_board_api_level < $1), 1, `$2\x27)\x27)\ndivert(0)dnl\n' > "$FLAG_MACROS"
 
           m4 -s \
             -D mls_num_sens=1 \
             -D mls_num_cats=1024 \
             -D target_build_variant=userdebug \
             -D target_arch=arm64 \
-            $HEADER_FILES \
+            -D target_board_api_level=202404 \
             "$FLAG_MACROS" \
+            $HEADER_FILES \
             $(find system/sepolicy/public -name "*.te" 2>/dev/null | sort) \
             $(find system/sepolicy/private -name "*.te" 2>/dev/null | sort) \
             $(find device/mediatek/sepolicy_vndr -name "*.te" 2>/dev/null | sort) \
