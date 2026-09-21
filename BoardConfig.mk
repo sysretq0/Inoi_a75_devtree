@@ -48,6 +48,10 @@ override TW_CUSTOM_CPU_POS := "300"
 override TW_CUSTOM_CLOCK_POS := "70"
 override TW_CUSTOM_BATTERY_POS := "790"
 
+# Battery
+override TW_CUSTOM_BATTERY_PATH := "/sys/class/power_supply/battery"
+override OF_BATTERY_PATH := "/sys/class/power_supply/battery"
+
 # CPU Temp
 override TW_CUSTOM_CPU_TEMP_PATH := /sys/devices/virtual/thermal/thermal_zone25/temp
 
