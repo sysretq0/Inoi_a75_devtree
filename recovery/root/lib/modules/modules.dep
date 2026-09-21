@@ -23,7 +23,7 @@
 /lib/modules/panel-samsung-ana6705-cmd-fhdp.ko: /lib/modules/mediatek-drm.ko /lib/modules/cmdq_helper_inf.ko /lib/modules/mmqos-common.ko /lib/modules/mtk-mmdvfs-debug.ko /lib/modules/mtk-mmdvfs.ko /lib/modules/mtk_dramc.ko /lib/modules/mtk_disp_notify.ko /lib/modules/mtk_panel_ext.ko /lib/modules/leds-mtk.ko /lib/modules/mtk-mml.ko /lib/modules/system_heap.ko /lib/modules/mtk_sync.ko /lib/modules/mtk_slbc.ko /lib/modules/mtk-icc-core.ko /lib/modules/mtk-cmdq-drv-ext.ko /lib/modules/device-apc-common.ko /lib/modules/mtk-smi-dbg.ko /lib/modules/mtk-smi.ko /lib/modules/emi.ko /lib/modules/emi-mpu.ko /lib/modules/vcp_status.ko /lib/modules/iommu_debug.ko /lib/modules/mmprofile.ko /lib/modules/irq-dbg.ko /lib/modules/clk-common.ko /lib/modules/aee_aed.ko /lib/modules/mrdump.ko
 /lib/modules/pinctrl-mtk-v2.ko:
 /lib/modules/vcp_status.ko:
-/lib/modules/mtk_chg_type_det.ko: /lib/modules/sgm415xx.ko /lib/modules/mt6358_battery.ko /lib/modules/pmic_lbat_service.ko /lib/modules/charger_class.ko /lib/modules/tcpc_class.ko /lib/modules/pd_dbg_info.ko
+/lib/modules/mtk_chg_type_det.ko: /lib/modules/pd_policy_manager.ko /lib/modules/sc8551_charger.ko /lib/modules/xr_charge_algo.ko /lib/modules/mtk_charger_framework.ko /lib/modules/adapter_class.ko /lib/modules/mtk_charger_algorithm_class.ko /lib/modules/sgm415xx.ko /lib/modules/mt6358_battery.ko /lib/modules/pmic_lbat_service.ko /lib/modules/charger_class.ko /lib/modules/tcpc_class.ko /lib/modules/pd_dbg_info.ko /lib/modules/mtk_disp_notify.ko
 /lib/modules/device-apc-mt6789.ko: /lib/modules/device-apc-common.ko /lib/modules/aee_aed.ko /lib/modules/mrdump.ko
 /lib/modules/mtk_iommu.ko: /lib/modules/iommu_secure.ko /lib/modules/mtk-smi-dbg.ko /lib/modules/mtk-smi.ko /lib/modules/emi.ko /lib/modules/emi-mpu.ko /lib/modules/iommu_debug.ko /lib/modules/aee_aed.ko /lib/modules/mrdump.ko
 /lib/modules/clk-mt6789-disp_dsc.ko: /lib/modules/clk-common.ko /lib/modules/aee_aed.ko /lib/modules/mrdump.ko
@@ -67,6 +67,7 @@
 /lib/modules/pd_dbg_info.ko:
 /lib/modules/tinysys-scmi.ko:
 /lib/modules/mtk_rpmsg_mbox.ko: /lib/modules/mtk-mbox.ko
+/lib/modules/panel-truly-nt36672s_fhdp2460-vdo-m9903.ko: /lib/modules/mtk_panel_ext.ko
 /lib/modules/panel-tianma-r66451-cmd-120hz.ko: /lib/modules/mtk_panel_ext.ko
 /lib/modules/rpmb.ko:
 /lib/modules/mtk-mbox.ko:

@@ -10,14 +10,27 @@ DEVICE_PATH := device/inoi/INOI_A75
 include device/alldocube/mt6789-common/BoardConfigCommon.mk
 
 # Assert
-TARGET_OTA_ASSERT_DEVICE := INOI_A75,A750,INOI_A75_Elegance
+TARGET_OTA_ASSERT_DEVICE := INOI_A75,A750,INOI_A75_Elegance,INOI_A750
 
 # Init
 TARGET_INIT_VENDOR_LIB := libinit_INOI_A75
 TARGET_RECOVERY_DEVICE_MODULES := libinit_INOI_A75
 
+# Dynamic Partitions (from lpdump.txt & ID V7)
+BOARD_SUPER_PARTITION_SIZE := 9663676416
+BOARD_SUPER_PARTITION_GROUPS := sysretq0_dynamic_partitions
+BOARD_SYSRETQ0_DYNAMIC_PARTITIONS_SIZE := 9661579264
+BOARD_SYSRETQ0_DYNAMIC_PARTITIONS_PARTITION_LIST := \
+    odm_dlkm \
+    product \
+    system \
+    system_ext \
+    vendor \
+    vendor_dlkm
+
 # TWRP Configs
-TW_DEVICE_VERSION := INOI_A75_NEEA_U_V6_20250828
+TW_DEVICE_VERSION := INOI_A750_ID_U_V7_20260822
+OF_MAINTAINER := sysretq0
 
 
 # Device Resolution
